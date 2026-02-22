@@ -1,0 +1,7 @@
+streamlit
+groq
+huggingface_hub
+pillow
+markdown
+xhtml2pdf
+python-dotenv
