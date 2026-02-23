@@ -11,9 +11,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─── API Keys (loaded from .env file) ───
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-HF_API_KEY   = os.getenv("HF_API_KEY", "")
+# ─── API Keys (Streamlit Cloud secrets → local .env fallback) ───
+def get_secret(key):
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.getenv(key, "")
+
+GROQ_API_KEY = get_secret("GROQ_API_KEY")
+HF_API_KEY   = get_secret("HF_API_KEY")
 
 # ─── Country → Cities Data ───
 COUNTRY_CITIES = {
