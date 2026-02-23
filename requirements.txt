@@ -2,6 +2,6 @@ streamlit
 groq
 huggingface_hub
 pillow
-markdown
-xhtml2pdf
+fpdf2
 python-dotenv
+requests
