@@ -559,8 +559,43 @@ def pil_to_b64(pil_img):
     return base64.b64encode(buf.getvalue()).decode()
 
 # ─── Beautiful HTML/PDF Generator ───
+def sanitize_for_pdf(text):
+    """Replace Unicode chars with ASCII equivalents for fpdf2 compatibility."""
+    replacements = {
+        '\u20b9': 'Rs.',    # ₹
+        '\u2192': '->',     # →
+        '\u2190': '<-',     # ←
+        '\u2194': '<->',    # ↔
+        '\u2022': '-',      # •
+        '\u2013': '-',      # –
+        '\u2014': '--',     # —
+        '\u2018': "'",      # '
+        '\u2019': "'",      # '
+        '\u201c': '"',      # "
+        '\u201d': '"',      # "
+        '\u2026': '...',    # …
+        '\u2713': '[OK]',   # ✓
+        '\u2714': '[OK]',   # ✔
+        '\u2716': '[X]',    # ✖
+        '\u2605': '*',      # ★
+        '\u2606': '*',      # ☆
+        '\u00b0': 'deg',    # °
+        '\xa0': ' ',        # non-breaking space
+    }
+    for uchar, ascii_rep in replacements.items():
+        text = text.replace(uchar, ascii_rep)
+    # Strip any remaining non-latin1 characters
+    return text.encode('latin-1', errors='replace').decode('latin-1')
+
+
 def create_pdf(itinerary_text, source, destination, country, images):
     """Generate a styled PDF using fpdf2 (pure Python, no C deps)."""
+    # Sanitize all text inputs
+    itinerary_text = sanitize_for_pdf(itinerary_text)
+    source = sanitize_for_pdf(source)
+    destination = sanitize_for_pdf(destination)
+    country = sanitize_for_pdf(country)
+
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
@@ -604,7 +639,7 @@ def create_pdf(itinerary_text, source, destination, country, images):
                 pdf.set_xy(x, y + 55)
                 pdf.set_font("Helvetica", "I", 9)
                 pdf.set_text_color(107, 93, 72)
-                pdf.cell(img_w, 5, label, align="C")
+                pdf.cell(img_w, 5, sanitize_for_pdf(label), align="C")
                 col += 1
                 if col >= 2:
                     col = 0
