@@ -693,16 +693,48 @@ def create_pdf(itinerary_text, source, destination, country, images):
                 cells = [c.strip() for c in clean.split("|")[1:-1]]
                 if cells and all(c.replace("-", "").strip() == "" for c in cells):
                     continue  # skip separator row
-                col_w = min(190 / max(len(cells), 1), 95)
+                
+                # Ensure we have at least 1 cell to avoid division by zero
+                num_cells = max(len(cells), 1)
+                col_w = max(190 / num_cells, 10)  # Minimum 10 width per cell
+                
                 pdf.set_font("Helvetica", "", 9)
-                for cell in cells:
-                    cell_text = cell.replace("**", "")[:40]  # truncate long cells
-                    pdf.cell(col_w, 6, cell_text, border=1)
-                pdf.ln()
+                start_x = pdf.get_x()
+                start_y = pdf.get_y()
+                
+                # Check page break manually
+                if start_y > 270:
+                    pdf.add_page()
+                    start_y = pdf.get_y()
+                    start_x = left_margin
+                    pdf.set_x(start_x)
+                
+                max_h = 6
+                for i, cell in enumerate(cells):
+                    cell_text = cell.replace("**", "")
+                    
+                    # Instead of cell(), we save position, use multi_cell to wrap text within the column box
+                    x = start_x + (i * col_w)
+                    pdf.set_xy(x, start_y)
+                    
+                    # multi_cell returns the Y position after rendering
+                    try:
+                        pdf.multi_cell(col_w, 6, cell_text, border=1, align="L")
+                        curr_h = pdf.get_y() - start_y
+                        if curr_h > max_h:
+                            max_h = curr_h
+                    except Exception:
+                        pass
+                
+                # Move to next row
+                pdf.set_xy(left_margin, start_y + max_h)
                 pdf.set_font("Helvetica", "", 10)
             else:
                 clean = clean.replace("**", "")
-                pdf.multi_cell(0, 5, clean)
+                try:
+                    pdf.multi_cell(190, 5, clean) # explicitly limit width to 190 (page width minus margins)
+                except Exception:
+                    pass
         except Exception:
             # If any line fails, just skip it
             pdf.ln(5)
